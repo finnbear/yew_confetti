@@ -1,8 +1,8 @@
 # yew_confetti
 
-[![Documentation](https://docs.rs/rustrict/badge.svg)](https://docs.rs/yew_confetti)
-[![crates.io](https://img.shields.io/crates/v/rustrict.svg)](https://crates.io/crates/yew_confetti)
-[![Build](https://github.com/finnbear/rustrict/actions/workflows/build.yml/badge.svg)](https://github.com/finnbear/yew_confetti/actions/workflows/build.yml) 
+[![Documentation](https://docs.rs/yew_confetti/badge.svg)](https://docs.rs/yew_confetti)
+[![crates.io](https://img.shields.io/crates/v/yew_confetti.svg)](https://crates.io/crates/yew_confetti)
+[![Build](https://github.com/finnbear/yew_confetti/actions/workflows/build.yml/badge.svg)](https://github.com/finnbear/yew_confetti/actions/workflows/build.yml) 
 [![Test Page](https://img.shields.io/badge/Test-page-green)](https://finnbear.github.io/yew_confetti/)
 
 Confetti animation for Yew websites, inspired by [canvas-confetti](https://github.com/catdad/canvas-confetti).

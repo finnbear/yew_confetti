@@ -1,4 +1,4 @@
 [build]
 target = "index.html"
 release = true
-public_url = "/rustrict/"
+public_url = "/yew_confetti/"
