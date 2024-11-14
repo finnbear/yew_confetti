@@ -1,0 +1,10 @@
+[package]
+name = "yew_confetti"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+js-sys = "0.3.72"
+web-sys = { version = "0.3.72", features = ["HtmlCanvasElement", "CanvasRenderingContext2d"] }
+yew = "0.21.0"
+gloo-console = "0.3.0"
