@@ -49,6 +49,7 @@ pub struct ConfettiProps {
     /// Id of the canvas.
     #[prop_or(None)]
     pub id: Option<AttrValue>,
+    /// `<Cannon/>`'s
     #[prop_or_default]
     pub children: ChildrenWithProps<Cannon>,
 }
@@ -68,6 +69,7 @@ struct State {
     last_time: Option<f64>,
 }
 
+/// Confetti emitter options.
 #[derive(Clone, PartialEq, Properties)]
 pub struct CannonProps {
     /// Emitter horizontal position. 0.0 means left edge, 1.0 means right edge.
@@ -93,7 +95,7 @@ pub struct CannonProps {
     pub colors: &'static [&'static str],
 }
 
-/// A confetti emitter.
+/// Confetti emitter component.
 pub struct Cannon;
 impl Component for Cannon {
     type Properties = CannonProps;
