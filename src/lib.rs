@@ -31,10 +31,10 @@ pub struct ConfettiProps {
     /// Random variation in launch angle (PI/2 = PI/4 on each side)
     #[prop_or(45f32.to_radians())]
     pub spread: f32,
-    #[prop_or(1.25)]
+    #[prop_or(2.0)]
     pub velocity: f32,
     /// Velocity decay per second.
-    #[prop_or(0.2)]
+    #[prop_or(0.3)]
     pub decay: f32,
     /// Downward acceleration.
     #[prop_or(1.0)]
@@ -198,13 +198,15 @@ fn rand_range(min: f32, max: f32) -> f32 {
 
 impl Fetti {
     fn new(props: &ConfettiProps) -> Self {
+        let (sin, cos) = rand_max(std::f32::consts::TAU).sin_cos();
+        let mag = rand_unit().sqrt();
         Self {
             x: props.x,
             y: props.y,
             wobble: rand_unit(),
             wobble_speed: rand_range(0.01, 0.015),
-            velocity: props.velocity + (0.5 + 0.5 * js_sys::Math::random() as f32),
-            angle_2d: props.angle + rand_range(-props.spread * 0.5, props.spread * 0.5),
+            velocity: props.velocity * (0.9 + 0.1 * sin * mag),
+            angle_2d: props.angle + cos * props.spread * 0.5 * mag,
             tilt_angle: rand_max(std::f32::consts::TAU),
             color: props.colors[rand_max(props.colors.len() as f32) as usize],
             shape: props.shapes[rand_max(props.shapes.len() as f32) as usize],
