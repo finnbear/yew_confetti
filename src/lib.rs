@@ -25,15 +25,16 @@ pub struct ConfettiProps {
     /// Emitter vertical position. 0.0 means bottom edge, 1.0 means top edge.
     #[prop_or(0.5)]
     pub y: f32,
-    /// Launch angle (0 = right, PI/2 = up, etc.)
+    /// Launch angle (0 = right, PI/2 = up, etc.).
     #[prop_or(90f32.to_radians())]
     pub angle: f32,
-    /// Random variation in launch angle (PI/2 = PI/4 on each side)
+    /// Random variation in launch angle (PI/2 = PI/4 on each side).
     #[prop_or(45f32.to_radians())]
     pub spread: f32,
+    /// Initial velocity.
     #[prop_or(2.0)]
     pub velocity: f32,
-    /// Velocity decay per second.
+    /// Velocity decay per second (0.5 means lose 50% of velocity per second).
     #[prop_or(0.3)]
     pub decay: f32,
     /// Downward acceleration.
@@ -86,7 +87,7 @@ struct State {
     last_time: Option<f64>,
 }
 
-/// Confetti animation.
+/// Confetti animation component.
 #[function_component(Confetti)]
 pub fn confetti(props: &ConfettiProps) -> Html {
     let canvas = use_node_ref();
