@@ -3,8 +3,8 @@ use std::ops::Range;
 use js_sys::wasm_bindgen::{prelude::Closure, JsCast};
 use web_sys::{window, CanvasRenderingContext2d, HtmlCanvasElement};
 use yew::{
-    function_component, html, use_effect_with, use_mut_ref, use_node_ref, AttrValue, Classes, Html,
-    Properties,
+    function_component, html, use_effect_with, use_mut_ref, use_node_ref, AttrValue,
+    ChildrenWithProps, Classes, Component, Html, Properties,
 };
 
 /// Confetti animation options.
@@ -19,21 +19,6 @@ pub struct ConfettiProps {
     /// If continuous, controls max alive particles. Otherwise, controls how many spawn at beginning.
     #[prop_or(150)]
     pub count: usize,
-    /// Emitter horizontal position. 0.0 means left edge, 1.0 means right edge.
-    #[prop_or(0.5)]
-    pub x: f32,
-    /// Emitter vertical position. 0.0 means bottom edge, 1.0 means top edge.
-    #[prop_or(0.5)]
-    pub y: f32,
-    /// Launch angle (0 = right, PI/2 = up, etc.).
-    #[prop_or(90f32.to_radians())]
-    pub angle: f32,
-    /// Random variation in launch angle (PI/2 = PI/4 on each side).
-    #[prop_or(45f32.to_radians())]
-    pub spread: f32,
-    /// Initial velocity.
-    #[prop_or(2.0)]
-    pub velocity: f32,
     /// Velocity decay per second (0.5 means lose 50% of velocity per second).
     #[prop_or(0.3)]
     pub decay: f32,
@@ -46,21 +31,15 @@ pub struct ConfettiProps {
     /// Number of seconds each particle lasts.
     #[prop_or(2.5)]
     pub lifespan: f32,
-    /// Whether to continuously spawn particles (or just once at the beginning).
-    #[prop_or(true)]
-    pub continuous: bool,
-    /// Shape probability distribution. Repeated shapes are more likely.
-    #[prop_or(&[Shape::Circle, Shape::Square])]
-    pub shapes: &'static [Shape],
-    /// CSS color probability distribution. Repeated colors are more likely.
-    #[prop_or(&["#26ccff", "#a25afd", "#ff5e7e", "#88ff5a", "#fcff42", "#ffa62d", "#ff36ff"])]
-    pub colors: &'static [&'static str],
     /// Don't show any confetti if user prefers reduced motion, according to a CSS media query.
     #[prop_or(true)]
     pub disable_for_reduced_motion: bool,
     /// Particle size.
     #[prop_or(5.0)]
     pub scalar: f32,
+    /// Whether to continuously spawn particles (or just once at the beginning).
+    #[prop_or(true)]
+    pub continuous: bool,
     /// Classes to apply to the canvas.
     #[prop_or_default]
     pub class: Classes,
@@ -70,6 +49,8 @@ pub struct ConfettiProps {
     /// Id of the canvas.
     #[prop_or(None)]
     pub id: Option<AttrValue>,
+    #[prop_or_default]
+    pub children: ChildrenWithProps<Cannon>,
 }
 
 fn request_animation_frame(f: &Closure<dyn FnMut(f64)>) -> i32 {
@@ -85,6 +66,44 @@ struct State {
     callback: Option<Closure<dyn FnMut(f64)>>,
     animation_frame: Option<i32>,
     last_time: Option<f64>,
+}
+
+#[derive(Clone, PartialEq, Properties)]
+pub struct CannonProps {
+    /// Emitter horizontal position. 0.0 means left edge, 1.0 means right edge.
+    #[prop_or(0.5)]
+    pub x: f32,
+    /// Emitter vertical position. 0.0 means bottom edge, 1.0 means top edge.
+    #[prop_or(0.5)]
+    pub y: f32,
+    /// Launch angle (0 = right, PI/2 = up, etc.).
+    #[prop_or(90f32.to_radians())]
+    pub angle: f32,
+    /// Random variation in launch angle (PI/2 = PI/4 on each side).
+    #[prop_or(45f32.to_radians())]
+    pub spread: f32,
+    /// Initial velocity.
+    #[prop_or(2.0)]
+    pub velocity: f32,
+    /// Shape probability distribution. Repeated shapes are more likely.
+    #[prop_or(&[Shape::Circle, Shape::Square])]
+    pub shapes: &'static [Shape],
+    /// CSS color probability distribution. Repeated colors are more likely.
+    #[prop_or(&["#26ccff", "#a25afd", "#ff5e7e", "#88ff5a", "#fcff42", "#ffa62d", "#ff36ff"])]
+    pub colors: &'static [&'static str],
+}
+
+/// A confetti emitter.
+pub struct Cannon;
+impl Component for Cannon {
+    type Properties = CannonProps;
+    type Message = ();
+    fn create(_ctx: &yew::Context<Self>) -> Self {
+        Self
+    }
+    fn view(&self, _ctx: &yew::Context<Self>) -> Html {
+        panic!("<Cannon> must be inside <Confetti>");
+    }
 }
 
 /// Confetti animation component.
@@ -105,23 +124,28 @@ pub fn confetti(props: &ConfettiProps) -> Html {
             .unwrap();
         let props = props.clone();
         let state_2 = state.clone();
-        let spawn_period = props.lifespan / props.count as f32;
+        let spawn_period = props.children.len() as f32 * props.lifespan / props.count as f32;
         let mut spawn_credits = 0.0;
         state_2.borrow_mut().callback = Some(Closure::new(move |time: f64| {
             context.reset();
             let mut state = state.borrow_mut();
 
             let delta = ((time - state.last_time.unwrap_or(time)) * 0.001).clamp(0.0, 0.5) as f32;
-            spawn_credits += delta;
+            if !props.children.is_empty() {
+                spawn_credits += delta;
 
-            while if props.continuous {
-                spawn_credits > spawn_period
-            } else {
-                state.last_time.is_none() && state.confetti.len() < props.count
-            } {
-                spawn_credits -= spawn_period;
-                state.confetti.push(Fetti::new(&props));
+                while if props.continuous {
+                    spawn_credits > spawn_period
+                } else {
+                    state.last_time.is_none() && state.confetti.len() < props.count
+                } {
+                    spawn_credits -= spawn_period;
+                    for cannon in props.children.iter() {
+                        state.confetti.push(Fetti::new(&props, &cannon.props));
+                    }
+                }
             }
+
             state
                 .confetti
                 .retain_mut(|fetti| fetti.update(delta, &props, &context));
@@ -193,23 +217,23 @@ fn rand_max(max: f32) -> f32 {
 }
 
 fn rand_range(min: f32, max: f32) -> f32 {
-    min + (max - min) * rand_unit()
+    min + rand_max(max - min)
 }
 
 impl Fetti {
-    fn new(props: &ConfettiProps) -> Self {
+    fn new(props: &ConfettiProps, cannon: &CannonProps) -> Self {
         let (sin, cos) = rand_max(std::f32::consts::TAU).sin_cos();
         let mag = rand_unit().sqrt();
         Self {
-            x: props.x,
-            y: props.y,
+            x: cannon.x,
+            y: cannon.y,
             wobble: rand_unit(),
             wobble_speed: rand_range(0.01, 0.015),
-            velocity: props.velocity * (0.9 + 0.1 * sin * mag),
-            angle_2d: props.angle + cos * props.spread * 0.5 * mag,
+            velocity: cannon.velocity * (0.9 + 0.1 * sin * mag),
+            angle_2d: cannon.angle + cos * cannon.spread * 0.5 * mag,
             tilt_angle: rand_max(std::f32::consts::TAU),
-            color: props.colors[rand_max(props.colors.len() as f32) as usize],
-            shape: props.shapes[rand_max(props.shapes.len() as f32) as usize],
+            color: cannon.colors[rand_max(cannon.colors.len() as f32) as usize],
+            shape: cannon.shapes[rand_max(cannon.shapes.len() as f32) as usize],
             life_remaining: props.lifespan,
         }
     }

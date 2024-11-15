@@ -7,6 +7,38 @@
 
 Confetti animation for Yew websites, inspired by [canvas-confetti](https://github.com/catdad/canvas-confetti).
 
+## Usage
+
+```rust
+use yew::html;
+use yew_confetti::{Confetti, Cannon};
+
+// Defaults, except style prop.
+// Shape and color props omitted.
+html!{
+    <Confetti
+        width={256}
+        height={256}
+        count={150}
+        decay={0.3}
+        drift={0}
+        gravity={1}
+        lifespan={2.5}
+        scalar={5}
+        continuous={true}
+        style={"background-color: black; width: 360px; height: 256px;"}
+  >
+        <Cannon
+            x={0.5}
+            y={0.5}
+            angle={1.5707964}
+            spread={0.7853982}
+            velocity={2}
+        />
+    </Confetti>
+}
+```
+
 ## License
 
 Licensed under either of
