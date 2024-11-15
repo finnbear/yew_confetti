@@ -116,9 +116,8 @@ pub fn confetti(props: &ConfettiProps) -> Html {
             while if props.continuous {
                 spawn_credits > spawn_period
             } else {
-                state.last_time.is_none()
-            } && state.confetti.len() < props.count
-            {
+                state.last_time.is_none() && state.confetti.len() < props.count
+            } {
                 spawn_credits -= spawn_period;
                 state.confetti.push(Fetti::new(&props));
             }
