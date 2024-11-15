@@ -7,10 +7,13 @@ use yew::{
     Properties,
 };
 
+/// Confetti animation options.
 #[derive(Clone, PartialEq, Properties)]
 pub struct ConfettiProps {
+    /// Horizontal resolution of canvas.
     #[prop_or(256)]
     pub width: u32,
+    /// Vertical resolution of canvas.
     #[prop_or(256)]
     pub height: u32,
     /// If continuous, controls max alive particles. Otherwise, controls how many spawn at beginning.
@@ -42,6 +45,7 @@ pub struct ConfettiProps {
     /// Number of seconds each particle lasts.
     #[prop_or(2.5)]
     pub lifespan: f32,
+    /// Whether to continuously spawn particles (or just once at the beginning).
     #[prop_or(true)]
     pub continuous: bool,
     /// Shape probability distribution. Repeated shapes are more likely.
@@ -53,6 +57,7 @@ pub struct ConfettiProps {
     /// Don't show any confetti if user prefers reduced motion, according to a CSS media query.
     #[prop_or(true)]
     pub disable_for_reduced_motion: bool,
+    /// Particle size.
     #[prop_or(5.0)]
     pub scalar: f32,
     /// Classes to apply to the canvas.
@@ -81,6 +86,7 @@ struct State {
     last_time: Option<f64>,
 }
 
+/// Confetti animation.
 #[function_component(Confetti)]
 pub fn confetti(props: &ConfettiProps) -> Html {
     let canvas = use_node_ref();
@@ -159,6 +165,7 @@ pub fn confetti(props: &ConfettiProps) -> Html {
     }
 }
 
+/// Particle shape.
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub enum Shape {
     Circle,
@@ -272,7 +279,7 @@ impl Fetti {
 }
 
 #[inline]
-pub fn map_ranges(number: f32, old: Range<f32>, new: Range<f32>) -> f32 {
+fn map_ranges(number: f32, old: Range<f32>, new: Range<f32>) -> f32 {
     let old_range = old.end - old.start;
     let new_range = new.end - new.start;
     let mul: f32 = new_range / old_range;
