@@ -125,7 +125,6 @@ pub fn confetti(props: &ConfettiProps) -> Html {
             state
                 .confetti
                 .retain_mut(|fetti| fetti.update(delta, &props, &context));
-            //gloo_console::log!("{}", state.confetti.len());
             state.last_time = Some(time);
 
             state.animation_frame = Some(request_animation_frame(state.callback.as_ref().unwrap()));

@@ -11,4 +11,3 @@ description = "Confetti animation for Yew websites"
 js-sys = "0.3.72"
 web-sys = { version = "0.3.72", features = ["HtmlCanvasElement", "CanvasRenderingContext2d", "MediaQueryList"] }
 yew = "0.21.0"
-gloo-console = "0.3.0"
