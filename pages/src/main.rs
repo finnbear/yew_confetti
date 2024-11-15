@@ -2,17 +2,56 @@ use std::ops::Deref;
 use std::str::FromStr;
 use web_sys::HtmlInputElement;
 use yew::{
-    function_component, html, use_state_eq, Callback, Html, InputEvent, Properties, TargetCast,
+    function_component, html, use_state_eq, Callback, Html, InputEvent, MouseEvent, Properties,
+    TargetCast,
 };
 use yew_confetti::{Confetti, ConfettiProps};
 
 #[function_component(App)]
 fn app() -> Html {
+    let key = use_state_eq(|| 0i32);
+    let on_reset = {
+        let key = key.clone();
+        Callback::from(move |_: MouseEvent| {
+            key.set(key.wrapping_add(1));
+        })
+    };
+
     let props = use_state_eq(|| {
         let __yew_props = ConfettiProps::builder();
         let __yew_required_props_token = ::yew::html::AssertAllProps;
         ::yew::html::Buildable::prepare_build(__yew_props, &__yew_required_props_token).build()
     });
+
+    let checkbox_factory = {
+        let props = props.clone();
+        move |name: &'static str,
+              load: fn(&ConfettiProps) -> bool,
+              store: fn(&mut ConfettiProps, bool)|
+              -> Html {
+            let props = props.clone();
+            let value = load(&*props);
+            let new_props = props.deref().clone();
+            let oninput = Callback::from(move |event: InputEvent| {
+                let input = event.target_dyn_into::<HtmlInputElement>().unwrap();
+                let value = input.checked();
+                let mut new_props = new_props.clone();
+                store(&mut new_props, value);
+                props.set(new_props);
+            });
+            html! {<tr>
+                <td>{name}{":"}</td>
+                <td>
+                    <input
+                        type="checkbox"
+                        checked={value}
+                        {oninput}
+                    />
+                </td>
+                <td>{value}</td>
+            </tr>}
+        }
+    };
 
     let slider_factory = {
         let props = props.clone();
@@ -50,7 +89,9 @@ fn app() -> Html {
     };
 
     html! {<>
+        <h2>{"yew_confetti"}</h2>
         <Confetti
+            key={*key}
             style={"background-color: black;"}
             ..props.deref().clone()
         />
@@ -94,6 +135,15 @@ fn app() -> Html {
             {slider_factory("scalar", 0.1, 10.0, |props| props.scalar, |props, scalar| {
                 props.scalar = scalar;
             })}
+            {checkbox_factory("continuous", |props| props.continuous, |props, continuous| {
+                props.continuous = continuous;
+            })}
+            <tr>
+                <td colspan="3"><button
+                    onclick={on_reset}
+                    style="color: black;"
+                >{"Reset"}</button></td>
+            </tr>
         </table>
     </>}
 }

@@ -14,7 +14,7 @@ pub struct ConfettiProps {
     #[prop_or(256)]
     pub height: u32,
     /// If continuous, controls max alive particles. Otherwise, controls how many spawn at beginning.
-    #[prop_or(50)]
+    #[prop_or(150)]
     pub count: usize,
     /// Emitter horizontal position. 0.0 means left edge, 1.0 means right edge.
     #[prop_or(0.5)]
@@ -28,10 +28,10 @@ pub struct ConfettiProps {
     /// Random variation in launch angle (PI/2 = PI/4 on each side)
     #[prop_or(45f32.to_radians())]
     pub spread: f32,
-    #[prop_or(2.0)]
+    #[prop_or(1.25)]
     pub velocity: f32,
     /// Velocity decay per second.
-    #[prop_or(0.25)]
+    #[prop_or(0.2)]
     pub decay: f32,
     /// Downward acceleration.
     #[prop_or(1.0)]
@@ -40,7 +40,7 @@ pub struct ConfettiProps {
     #[prop_or(0.0)]
     pub drift: f32,
     /// Number of seconds each particle lasts.
-    #[prop_or(4.0)]
+    #[prop_or(2.5)]
     pub lifespan: f32,
     #[prop_or(true)]
     pub continuous: bool,
@@ -66,18 +66,19 @@ pub struct ConfettiProps {
     pub id: Option<AttrValue>,
 }
 
-fn request_animation_frame(f: &Closure<dyn FnMut(f64)>) {
+fn request_animation_frame(f: &Closure<dyn FnMut(f64)>) -> i32 {
     window()
         .unwrap()
         .request_animation_frame(f.as_ref().unchecked_ref())
-        .expect("should register `requestAnimationFrame`");
+        .expect("should register `requestAnimationFrame`")
 }
 
 #[derive(Default)]
 struct State {
     confetti: Vec<Fetti>,
     callback: Option<Closure<dyn FnMut(f64)>>,
-    last_time: f64,
+    animation_frame: Option<i32>,
+    last_time: Option<f64>,
 }
 
 #[function_component(Confetti)]
@@ -100,30 +101,28 @@ pub fn confetti(props: &ConfettiProps) -> Html {
         let spawn_period = props.lifespan / props.count as f32;
         let mut spawn_credits = 0.0;
         state_2.borrow_mut().callback = Some(Closure::new(move |time: f64| {
+            context.reset();
+            let mut state = state.borrow_mut();
+
+            let delta = ((time - state.last_time.unwrap_or(time)) * 0.001).clamp(0.0, 0.5) as f32;
+            spawn_credits += delta;
+
+            while if props.continuous {
+                spawn_credits > spawn_period
+            } else {
+                state.last_time.is_none()
+            } && state.confetti.len() < props.count
             {
-                context.reset();
-                let mut state = state.borrow_mut();
-
-                let delta = ((time - state.last_time) * 0.001).clamp(0.0, 0.5) as f32;
-                spawn_credits += delta;
-
-                while if props.continuous {
-                    spawn_credits > spawn_period
-                } else {
-                    state.last_time == 0.0
-                } && state.confetti.len() < props.count
-                {
-                    spawn_credits -= spawn_period;
-                    state.confetti.push(Fetti::new(&props));
-                }
-                state
-                    .confetti
-                    .retain_mut(|fetti| fetti.update(delta, &props, &context));
-                //gloo_console::log!("{}", state.confetti.len());
-                state.last_time = time;
+                spawn_credits -= spawn_period;
+                state.confetti.push(Fetti::new(&props));
             }
+            state
+                .confetti
+                .retain_mut(|fetti| fetti.update(delta, &props, &context));
+            //gloo_console::log!("{}", state.confetti.len());
+            state.last_time = Some(time);
 
-            request_animation_frame(state.borrow().callback.as_ref().unwrap());
+            state.animation_frame = Some(request_animation_frame(state.callback.as_ref().unwrap()));
         }));
 
         if !disable_for_reduced_motion
@@ -135,10 +134,17 @@ pub fn confetti(props: &ConfettiProps) -> Html {
                 .map(|m| m.matches())
                 .unwrap_or(false)
         {
-            request_animation_frame(state_2.borrow().callback.as_ref().unwrap());
+            let mut state = state_2.borrow_mut();
+            state.animation_frame = Some(request_animation_frame(state.callback.as_ref().unwrap()));
         }
 
-        move || drop(state_2.borrow_mut().callback.take())
+        move || {
+            let mut state = state_2.borrow_mut();
+            if let Some(animation_frame) = state.animation_frame.take() {
+                let _ = window().unwrap().cancel_animation_frame(animation_frame);
+            }
+            drop(state.callback.take());
+        }
     });
 
     html! {
