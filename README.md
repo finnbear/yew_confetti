@@ -36,6 +36,7 @@ html!{
             continuous={true}
         />
     </Confetti>
+}
 ```
 
 ## License
