@@ -120,7 +120,6 @@ fn app() -> Html {
     prop!(code, props, default_props, gravity, "", show_defaults);
     prop!(code, props, default_props, lifespan, "", show_defaults);
     prop!(code, props, default_props, scalar, "", show_defaults);
-    prop!(code, props, default_props, continuous, "", show_defaults);
     write!(&mut code, "    style={{{style:?}}}\n").unwrap();
     write!(&mut code, ">\n").unwrap();
     for props in cannons_props.iter() {
@@ -131,6 +130,14 @@ fn app() -> Html {
         prop!(code, props, default_props, angle, "    ", show_defaults);
         prop!(code, props, default_props, spread, "    ", show_defaults);
         prop!(code, props, default_props, velocity, "    ", show_defaults);
+        prop!(
+            code,
+            props,
+            default_props,
+            continuous,
+            "    ",
+            show_defaults
+        );
         write!(&mut code, "    />\n").unwrap();
     }
     write!(&mut code, "</Confetti>\n").unwrap();
@@ -190,6 +197,9 @@ fn app() -> Html {
                     {slider_factory(&format!("velocity{i}"), 0.1, 3.0, cannons_props.clone(), move |props| props[i].velocity, move |props, velocity| {
                         props[i].velocity = velocity;
                     })}
+                    {checkbox_factory(&format!("continuous{i}"), cannons_props.clone(), move |props| props[i].continuous, move |props, continuous| {
+                        props[i].continuous = continuous;
+                    })}
                 </>}).collect::<Html>()}
                 {slider_factory("decay", 0.01, 1.0, props.clone(), |props| props.decay, |props, decay| {
                     props.decay = decay;
@@ -205,9 +215,6 @@ fn app() -> Html {
                 })}
                 {slider_factory("scalar", 0.1, 10.0, props.clone(), |props| props.scalar, |props, scalar| {
                     props.scalar = scalar;
-                })}
-                {checkbox_factory("continuous", props.clone(), |props| props.continuous, |props, continuous| {
-                    props.continuous = continuous;
                 })}
                 {checkbox_factory("show_defaults", show_defaults.clone(), |props| *props, |props, continuous| {
                     *props = continuous;

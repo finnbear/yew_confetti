@@ -25,18 +25,17 @@ html!{
         gravity={1}
         lifespan={2.5}
         scalar={5}
-        continuous={true}
-        style={"background-color: black; width: 360px; height: 256px;"}
-  >
+        style={"background-color: black; width: 256px; height: 256px;"}
+    >
         <Cannon
             x={0.5}
             y={0.5}
             angle={1.5707964}
             spread={0.7853982}
             velocity={2}
+            continuous={true}
         />
     </Confetti>
-}
 ```
 
 ## License

@@ -37,9 +37,6 @@ pub struct ConfettiProps {
     /// Particle size.
     #[prop_or(5.0)]
     pub scalar: f32,
-    /// Whether to continuously spawn particles (or just once at the beginning).
-    #[prop_or(true)]
-    pub continuous: bool,
     /// Classes to apply to the canvas.
     #[prop_or_default]
     pub class: Classes,
@@ -93,6 +90,9 @@ pub struct CannonProps {
     /// CSS color probability distribution. Repeated colors are more likely.
     #[prop_or(&["#26ccff", "#a25afd", "#ff5e7e", "#88ff5a", "#fcff42", "#ffa62d", "#ff36ff"])]
     pub colors: &'static [&'static str],
+    /// Whether to continuously spawn particles (or just once at the beginning).
+    #[prop_or(true)]
+    pub continuous: bool,
 }
 
 /// Confetti emitter component.
@@ -126,7 +126,14 @@ pub fn confetti(props: &ConfettiProps) -> Html {
             .unwrap();
         let props = props.clone();
         let state_2 = state.clone();
-        let spawn_period = props.children.len() as f32 * props.lifespan / props.count as f32;
+        let spawn_period = props.children.iter().filter(|c| c.props.continuous).count() as f32
+            * props.lifespan
+            / props.count as f32;
+        let burst = props
+            .children
+            .iter()
+            .filter(|c| !c.props.continuous)
+            .count();
         let mut spawn_credits = 0.0;
         state_2.borrow_mut().callback = Some(Closure::new(move |time: f64| {
             context.reset();
@@ -135,14 +142,18 @@ pub fn confetti(props: &ConfettiProps) -> Html {
             let delta = ((time - state.last_time.unwrap_or(time)) * 0.001).clamp(0.0, 0.5) as f32;
             if !props.children.is_empty() {
                 spawn_credits += delta;
+                let spend = (spawn_credits / spawn_period).floor();
+                spawn_credits -= spend * spawn_period;
 
-                while if props.continuous {
-                    spawn_credits > spawn_period
-                } else {
-                    state.last_time.is_none() && state.confetti.len() < props.count
-                } {
-                    spawn_credits -= spawn_period;
-                    for cannon in props.children.iter() {
+                for cannon in props.children.iter() {
+                    let budget = if cannon.props.continuous {
+                        spend as usize
+                    } else if state.last_time.is_none() {
+                        (props.count + burst - 1) / burst
+                    } else {
+                        0
+                    };
+                    for _ in 0..budget {
                         state.confetti.push(Fetti::new(&props, &cannon.props));
                     }
                 }
