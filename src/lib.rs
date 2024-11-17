@@ -305,7 +305,7 @@ pub fn confetti(props: &ConfettiProps) -> Html {
                             //let effective_delta_time = effective_end_time - effective_start_time;
                             (effective_start_time..effective_end_time)
                                 .filter(|effective_time| {
-                                    rate >= ORDER[(effective_time % 1000) as usize]
+                                    rate > ORDER[(effective_time % 1000) as usize]
                                 })
                                 .count()
                         } else {
