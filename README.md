@@ -11,15 +11,14 @@ Confetti animation for Yew websites, inspired by [canvas-confetti](https://githu
 
 ```rust
 use yew::html;
-use yew_confetti::{Confetti, Cannon};
+use yew_confetti::{Confetti, Cannon, Mode};
 
 // Defaults, except style prop.
 // Shape and color props omitted.
-html!{
+html! {
     <Confetti
         width={256}
         height={256}
-        count={150}
         decay={0.3}
         drift={0}
         gravity={1}
@@ -33,7 +32,7 @@ html!{
             angle={1.5707964}
             spread={0.7853982}
             velocity={2}
-            continuous={true}
+            mode={Mode::continuous(100)}
         />
     </Confetti>
 }

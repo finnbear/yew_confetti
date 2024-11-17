@@ -6,7 +6,7 @@ use yew::{
     function_component, html, html_nested, props, use_state_eq, Callback, Html, InputEvent,
     MouseEvent, TargetCast, UseStateHandle,
 };
-use yew_confetti::{Cannon, CannonProps, Confetti, ConfettiProps};
+use yew_confetti::{Cannon, CannonProps, Confetti, ConfettiProps, Mode, ModeImpl};
 
 #[function_component(App)]
 fn app() -> Html {
@@ -97,13 +97,14 @@ fn app() -> Html {
 
     let default_props = props!(ConfettiProps {});
     let mut code = String::new();
-    write!(&mut code, "<Confetti\n").unwrap();
+    write!(&mut code, "html! {{\n").unwrap();
+    write!(&mut code, "    <Confetti\n").unwrap();
     macro_rules! prop {
         ($code: ident, $props: ident, $defaults: ident, $prop: ident, $ident: literal, $show_defaults: ident) => {
             if *$show_defaults || $props.$prop != $defaults.$prop {
                 write!(
                     &mut $code,
-                    "{}    {}={{{}}}\n",
+                    "{}        {}={{{}}}\n",
                     $ident,
                     stringify!($prop),
                     $props.$prop
@@ -114,33 +115,41 @@ fn app() -> Html {
     }
     prop!(code, props, default_props, width, "", show_defaults);
     prop!(code, props, default_props, height, "", show_defaults);
-    prop!(code, props, default_props, count, "", show_defaults);
+    //prop!(code, props, default_props, count, "", show_defaults);
     prop!(code, props, default_props, decay, "", show_defaults);
     prop!(code, props, default_props, drift, "", show_defaults);
     prop!(code, props, default_props, gravity, "", show_defaults);
     prop!(code, props, default_props, lifespan, "", show_defaults);
     prop!(code, props, default_props, scalar, "", show_defaults);
-    write!(&mut code, "    style={{{style:?}}}\n").unwrap();
-    write!(&mut code, ">\n").unwrap();
+    write!(&mut code, "        style={{{style:?}}}\n").unwrap();
+    write!(&mut code, "    >\n").unwrap();
     for props in cannons_props.iter() {
         let default_props = props!(CannonProps {});
-        write!(&mut code, "    <Cannon\n").unwrap();
+        write!(&mut code, "        <Cannon\n").unwrap();
         prop!(code, props, default_props, x, "    ", show_defaults);
         prop!(code, props, default_props, y, "    ", show_defaults);
         prop!(code, props, default_props, angle, "    ", show_defaults);
         prop!(code, props, default_props, spread, "    ", show_defaults);
         prop!(code, props, default_props, velocity, "    ", show_defaults);
-        prop!(
-            code,
-            props,
-            default_props,
-            continuous,
-            "    ",
-            show_defaults
-        );
-        write!(&mut code, "    />\n").unwrap();
+        if *show_defaults || props.mode != default_props.mode {
+            write!(
+                &mut code,
+                "{}    {}={{{}}}\n",
+                "        ",
+                stringify!(mode),
+                match props.mode.impl_ref() {
+                    ModeImpl::Burst { count, delay: 0 } => format!("Mode::burst({count})"),
+                    ModeImpl::Burst { count, delay } =>
+                        format!("Mode::delayed_burst({count}, {:.3})", *delay as f32 * 0.001),
+                    ModeImpl::Continuous { rate, .. } => format!("Mode::continuous({rate})"),
+                }
+            )
+            .unwrap();
+        }
+        write!(&mut code, "        />\n").unwrap();
     }
-    write!(&mut code, "</Confetti>\n").unwrap();
+    write!(&mut code, "    </Confetti>\n").unwrap();
+    write!(&mut code, "}}\n").unwrap();
 
     html! {<>
         <h2 style="margin-top: 0;">{"yew_confetti"}</h2>
@@ -164,15 +173,12 @@ fn app() -> Html {
                     {code}
                 </pre>
             </div>
-            <table style="border-spacing: 0.25rem; table-layout: fixed; border-collapse: separate;">
+            <table style="border-spacing: 0.25rem; table-layout: fixed; border-collapse: separate; width: 40vw;">
                 {slider_factory("width", 64.0, 512.0, props.clone(), |props| props.width as f32, |props, width| {
                     props.width = width as u32;
                 })}
                 {slider_factory("height", 64.0, 512.0, props.clone(), |props| props.height as f32, |props, height| {
                     props.height = height as u32;
-                })}
-                {slider_factory("count", 1.0, 500.0, props.clone(), |props| props.count as f32, |props, count| {
-                    props.count = count as usize;
                 })}
                 {slider_factory("cannons", 0.0, 3.0, cannons_props.clone(), move |props| props.len() as f32, move |props, x| {
                     let x = x as usize;
@@ -197,9 +203,49 @@ fn app() -> Html {
                     {slider_factory(&format!("velocity{i}"), 0.1, 3.0, cannons_props.clone(), move |props| props[i].velocity, move |props, velocity| {
                         props[i].velocity = velocity;
                     })}
-                    {checkbox_factory(&format!("continuous{i}"), cannons_props.clone(), move |props| props[i].continuous, move |props, continuous| {
-                        props[i].continuous = continuous;
+                    {checkbox_factory(&format!("continuous{i}"), cannons_props.clone(), move |props| props[i].mode.is_continuous(), move |props, continuous| {
+                        props[i].mode = if continuous {
+                            Mode::continuous(100)
+                        } else {
+                            Mode::burst(250)
+                        };
                     })}
+                    if cannons_props[i].mode.is_continuous() {
+                        {slider_factory(&format!("rate{i}"), 0.0, 400.0, cannons_props.clone(), move |props| -> f32 {
+                            if let ModeImpl::Continuous{rate, ..} = props[i].mode.impl_ref() {
+                                *rate as f32
+                            } else {
+                                0.0
+                            }
+                        }, move |props, value| {
+                            if let ModeImpl::Continuous{rate, ..} = props[i].mode.impl_mut() {
+                                *rate = value as u16;
+                            }
+                        })}
+                    } else {
+                        {slider_factory(&format!("count{i}"), 0.0, 400.0, cannons_props.clone(), move |props| -> f32 {
+                            if let ModeImpl::Burst{count, ..} = props[i].mode.impl_ref() {
+                                *count as f32
+                            } else {
+                                0.0
+                            }
+                        }, move |props, value| {
+                            if let ModeImpl::Burst{count, ..} = props[i].mode.impl_mut() {
+                                *count = value as usize;
+                            }
+                        })}
+                        {slider_factory(&format!("delay{i}"), 0.0, 2.0, cannons_props.clone(), move |props| -> f32 {
+                            if let ModeImpl::Burst{delay, ..} = props[i].mode.impl_ref() {
+                                *delay as f32 * 0.001
+                            } else {
+                                0.0
+                            }
+                        }, move |props, value| {
+                            if let ModeImpl::Burst{delay, ..} = props[i].mode.impl_mut() {
+                                *delay = (value * 1000.0) as u64;
+                            }
+                        })}
+                    }
                 </>}).collect::<Html>()}
                 {slider_factory("decay", 0.01, 1.0, props.clone(), |props| props.decay, |props, decay| {
                     props.decay = decay;
