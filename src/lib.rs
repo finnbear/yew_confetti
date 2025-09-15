@@ -333,7 +333,9 @@ pub fn confetti(props: &ConfettiProps) -> Html {
                     .retain_mut(|fetti| fetti.update(raw_delta, &props));
             }
 
-            context.reset();
+            // This is like `context.reset()` but works in older browsers.
+            context.clear_rect(0.0, 0.0, props.width as f64, props.height as f64);
+
             for fetti in &state.confetti {
                 fetti.draw(&props, &context);
             }
