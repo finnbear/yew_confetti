@@ -6,7 +6,7 @@ publish = false
 
 [dependencies]
 yew_confetti = { path = ".." }
-yew = { version = "0.21", features = ["csr"] }
+yew = { version = "0.23", features = ["csr"] }
 web-sys = "0.3"
 
 [profile.release]
